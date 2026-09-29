@@ -10,12 +10,22 @@ The Buf module is named `buf.build/x40-link/api`. The module currently defines
 [`dev/auth.proto`](dev/auth.proto). The running service enforces those scopes;
 the annotation does not itself implement authentication in generated clients.
 
-To check the schema locally, install [Buf](https://buf.build/docs/installation/)
-and run:
+Install [Task](https://taskfile.dev/docs/installation/) and Go, then run
+`task setup`. Make sure Go's binary directory (`$(go env GOPATH)/bin`) is on
+your `PATH`. The tasks are:
 
 ```sh
-buf build
+task build       # Compile the schema.
+task lint        # Run Buf lint and Google's API linter.
+task lint:buf    # Run Buf lint alone.
+task lint:aip    # Run the API linter alone.
+task validate    # Build and run both linters.
 ```
+
+The current API predates these checks and has existing lint findings. In
+particular, its package layout, RPC names, and missing HTTP annotations need
+an API design and compatibility decision before `task lint` can pass. The
+linters report these findings rather than suppressing them.
 
 No language-specific generators or published client packages are configured
 here yet. The current Go package option reserves
