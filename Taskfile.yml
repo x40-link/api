@@ -1,0 +1,39 @@
+version: '3'
+
+set: [pipefail]
+
+vars:
+  BUF_VERSION: v1.56.0
+  API_LINTER_VERSION: v2.4.0
+
+tasks:
+  setup:
+    desc: Install the protobuf validation tools into Go's binary directory.
+    cmds:
+      - go install github.com/bufbuild/buf/cmd/buf@{{.BUF_VERSION}}
+      - go install github.com/googleapis/api-linter/v2/cmd/api-linter@{{.API_LINTER_VERSION}}
+
+  build:
+    desc: Compile the protobuf schema.
+    cmds:
+      - buf build
+
+  lint:buf:
+    desc: Check protobuf style and structure with Buf.
+    cmds:
+      - buf lint
+
+  lint:aip:
+    desc: Check Google API Improvement Proposal rules.
+    cmds:
+      - buf build --as-file-descriptor-set -o /dev/stdout | api-linter --descriptor-set-in /dev/stdin --set-exit-status dev/*.proto
+
+  lint:
+    desc: Run both protobuf linters.
+    deps: [lint:buf, lint:aip]
+
+  validate:
+    desc: Compile and lint the protobuf schema.
+    cmds:
+      - task: build
+      - task: lint
