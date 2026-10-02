@@ -2,3 +2,13 @@ version: v1
 name: buf.build/x40-link/api
 deps:
   - buf.build/googleapis/googleapis
+lint:
+  use:
+    - STANDARD
+  # AIP standard methods return ShortLink directly, and Delete returns Empty.
+  # Buf's generic response naming/uniqueness rules conflict with that shape.
+  ignore_only:
+    RPC_REQUEST_RESPONSE_UNIQUE:
+      - x40/link/v1alpha/short_link.proto
+    RPC_RESPONSE_STANDARD_NAME:
+      - x40/link/v1alpha/short_link.proto
