@@ -10,6 +10,12 @@ redirect remains a 307. Each management RPC declares an OAuth scope in
 [`auth.proto`](x40/link/v1alpha/auth.proto); the running service must enforce
 those scopes. The proto annotation alone does not implement authentication.
 
+All management RPCs already declare `google.api.http` bindings following
+[Google's HTTP transcoding guidance (AIP-127)](https://google.aip.dev/127).
+See the [HTTP reference](docs/reference/http.md) for routes, JSON bodies, and
+query parameters. Serving these bindings requires an HTTP/JSON transcoder or
+equivalent handlers in the running service.
+
 ## Identity and lifecycle
 
 A link has one canonical `(domain, path)` identity. Its name is
