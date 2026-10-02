@@ -26,7 +26,7 @@ tasks:
   lint:aip:
     desc: Check Google API Improvement Proposal rules.
     cmds:
-      - buf build --as-file-descriptor-set -o /dev/stdout | api-linter --descriptor-set-in /dev/stdin --set-exit-status dev/*.proto
+      - buf build --as-file-descriptor-set -o /dev/stdout | api-linter --descriptor-set-in /dev/stdin --set-exit-status x40/link/v1alpha/*.proto
 
   lint:
     desc: Run both protobuf linters.

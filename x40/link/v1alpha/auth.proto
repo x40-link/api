@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package x40.link.v1alpha;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/x40-link/api/gen/x40/link/v1alpha;v1alpha";
+option java_multiple_files = true;
+option java_outer_classname = "AuthProto";
+option java_package = "com.x40.link.v1alpha";
+
+// The OAuth scope required to invoke a management RPC.
+extend google.protobuf.MethodOptions {
+  string oauth2_scope = 50000;
+}
