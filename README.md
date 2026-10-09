@@ -68,8 +68,9 @@ and a JDK 17 or newer, then run `task setup`. Ensure Go's binary directory
 (`$(go env GOPATH)/bin`) is on `PATH`. The tasks are:
 
 ```sh
-task generate        # Regenerate Go code and the OpenAPI document.
-task generate:mobile # Regenerate iOS and Android stubs.
+task generate        # Regenerate all Go, OpenAPI, iOS, and Android outputs.
+task generate:go     # Regenerate Go code and the OpenAPI document only.
+task generate:mobile # Regenerate iOS and Android stubs only.
 task build           # Compile the schema.
 task lint            # Run Buf lint and Google's API linter.
 task lint:buf        # Run Buf lint alone.
@@ -93,10 +94,12 @@ implement the separate public 307 redirect endpoint.
 
 The source package, generator versions, and Go dependencies are pinned in
 `buf.gen.yaml`, `Taskfile.yml`, and `go.mod`. Run `task generate` after changing
-the proto files, then commit the generated files with the schema change. Run
-`task generate:mobile` for the mobile clients. The mobile generators are pinned
-in `buf.gen.mobile.yaml` and run on the Buf Schema Registry, so that task needs
-network access. It writes public SwiftProtobuf and gRPC Swift 2 types to
+the proto files, then commit the generated files with the schema change. The
+focused `generate:go` and `generate:mobile` tasks use separate Buf templates so
+Go and OpenAPI outputs can be regenerated without network access. The mobile
+generators are pinned in `buf.gen.mobile.yaml` and run on the Buf Schema
+Registry, so `task generate` and `task generate:mobile` need network access.
+Mobile generation writes public SwiftProtobuf and gRPC Swift 2 types to
 `gen/ios/`, and Android Protobuf Lite messages, Kotlin builders, and gRPC Java
 and Kotlin stubs to `gen/android/`.
 

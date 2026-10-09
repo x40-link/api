@@ -21,6 +21,12 @@ tasks:
       - go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv3@{{.GRPC_GATEWAY_VERSION}}
 
   generate:
+    desc: Regenerate all checked-in Go, OpenAPI, iOS, and Android outputs.
+    cmds:
+      - task: generate:go
+      - task: generate:mobile
+
+  generate:go:
     desc: Generate Go code, HTTP gateway handlers, and the OpenAPI document.
     cmds:
       - buf generate
