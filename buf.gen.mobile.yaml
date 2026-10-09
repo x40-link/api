@@ -1,0 +1,20 @@
+version: v1
+plugins:
+  - plugin: buf.build/apple/swift:v1.38.1
+    out: gen/ios
+    opt: Visibility=Public
+  - plugin: buf.build/grpc/swift-protobuf:v2.4.1
+    out: gen/ios
+    opt: Visibility=Public
+  - plugin: buf.build/protocolbuffers/java:v32.0
+    out: gen/android
+    opt: lite
+  - plugin: buf.build/protocolbuffers/kotlin:v32.0
+    out: gen/android
+    opt: lite
+  - plugin: buf.build/grpc/java:v1.75.0
+    out: gen/android
+    opt: lite
+  - plugin: buf.build/grpc/kotlin:v1.5.0
+    out: gen/android
+    opt: lite

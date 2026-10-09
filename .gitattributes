@@ -1,0 +1,3 @@
+android/gradlew.bat text eol=crlf
+gen/** -whitespace linguist-generated=true
+docs/openapi/** linguist-generated=true

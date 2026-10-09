@@ -5,13 +5,51 @@ set: [pipefail]
 vars:
   BUF_VERSION: v1.56.0
   API_LINTER_VERSION: v2.4.0
+  PROTOC_GEN_GO_VERSION: v1.36.12
+  PROTOC_GEN_GO_GRPC_VERSION: v1.6.2
+  GRPC_GATEWAY_VERSION: v2.31.0
 
 tasks:
   setup:
-    desc: Install the protobuf validation tools into Go's binary directory.
+    desc: Install the protobuf validation and Go generation tools into Go's binary directory.
     cmds:
       - go install github.com/bufbuild/buf/cmd/buf@{{.BUF_VERSION}}
       - go install github.com/googleapis/api-linter/v2/cmd/api-linter@{{.API_LINTER_VERSION}}
+      - go install google.golang.org/protobuf/cmd/protoc-gen-go@{{.PROTOC_GEN_GO_VERSION}}
+      - go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@{{.PROTOC_GEN_GO_GRPC_VERSION}}
+      - go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@{{.GRPC_GATEWAY_VERSION}}
+      - go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv3@{{.GRPC_GATEWAY_VERSION}}
+
+  generate:
+    desc: Regenerate all checked-in Go, OpenAPI, iOS, and Android outputs.
+    cmds:
+      - task: generate:go
+      - task: generate:mobile
+
+  generate:go:
+    desc: Generate Go code, HTTP gateway handlers, and the OpenAPI document.
+    cmds:
+      - buf generate
+
+  generate:mobile:
+    desc: Generate Swift and Android Lite protobuf and gRPC clients.
+    cmds:
+      - buf generate --template buf.gen.mobile.yaml
+
+  test:go:
+    desc: Compile and test generated Go packages.
+    cmds:
+      - go test -race ./...
+
+  build:android:
+    desc: Compile and package the Android client library.
+    cmds:
+      - ./android/gradlew -p android build
+
+  build:ios:
+    desc: Compile the Swift Package on a machine with Swift 6.1 or newer.
+    cmds:
+      - swift build
 
   build:
     desc: Compile the protobuf schema.
@@ -33,7 +71,9 @@ tasks:
     deps: [lint:buf, lint:aip]
 
   validate:
-    desc: Compile and lint the protobuf schema.
+    desc: Build and lint the schema, test Go packages, and build the Android library.
     cmds:
       - task: build
       - task: lint
+      - task: test:go
+      - task: build:android
