@@ -53,8 +53,8 @@ The direct Create/Update responses and absence of a `reconciling` field reflect
 synchronous writes. Narrow inline API-linter suppressions document the pinned
 linter's unconditional LRO and reconciliation checks, the path-derived ID and
 resource pattern, and the absence of `delete_time` and `display_name` on this
-hard-deleted resource. The pinned googleapis dependency lacks `field_info.proto`,
-so the UID and request ID format checks are suppressed at those fields. Buf's
+hard-deleted resource. The UID format remains opaque and request IDs may be
+non-UUID ASCII strings, so UUID4 checks are suppressed at those fields. Buf's
 two response-shape exceptions are scoped to `short_link.proto` in `buf.yaml`.
 
 The API does not set a product-specific path-length limit. Before v1alpha is
@@ -63,18 +63,73 @@ transport and storage limits.
 
 ## Validation
 
-Install [Task](https://taskfile.dev/docs/installation/) and Go, then run
-`task setup`. Ensure Go's binary directory (`$(go env GOPATH)/bin`) is on
-`PATH`. The tasks are:
+Install [Task](https://taskfile.dev/docs/installation/), Go 1.26 or newer,
+and a JDK 17 or newer, then run `task setup`. Ensure Go's binary directory
+(`$(go env GOPATH)/bin`) is on `PATH`. The tasks are:
 
 ```sh
-task build       # Compile the schema.
-task lint        # Run Buf lint and Google's API linter.
-task lint:buf    # Run Buf lint alone.
-task lint:aip    # Run the API linter alone.
-task validate    # Build and run both linters.
+task generate        # Regenerate Go code and the OpenAPI document.
+task generate:mobile # Regenerate iOS and Android stubs.
+task build           # Compile the schema.
+task lint            # Run Buf lint and Google's API linter.
+task lint:buf        # Run Buf lint alone.
+task lint:aip        # Run the API linter alone.
+task test:go         # Test the Go package with the race detector.
+task build:android   # Build the Android Gradle library.
+task build:ios       # Build the Swift package with Swift 6.1 or newer.
+task validate        # Build and lint the schema, test Go, and build Android.
 ```
 
-No language-specific generators or published client packages are configured
-here yet. The Go package option reserves
-`github.com/x40-link/api/gen/x40/link/v1alpha` for generated Go code.
+The checked-in Go package is
+`github.com/x40-link/api/gen/x40/link/v1alpha`. It contains protobuf messages,
+the `ShortLinkServiceServer` and `ShortLinkServiceClient` interfaces, and a
+gRPC-Gateway HTTP/JSON reverse proxy for the annotated management routes.
+Register a service with `RegisterShortLinkServiceServer`. To serve the HTTP
+bindings through the gRPC server, register the gateway using
+`RegisterShortLinkServiceHandlerFromEndpoint` or
+`RegisterShortLinkServiceHandler` with a gRPC connection. This path preserves
+gRPC interceptors, including authentication. The generated gateway does not
+implement the separate public 307 redirect endpoint.
+
+The source package, generator versions, and Go dependencies are pinned in
+`buf.gen.yaml`, `Taskfile.yml`, and `go.mod`. Run `task generate` after changing
+the proto files, then commit the generated files with the schema change. Run
+`task generate:mobile` for the mobile clients. The mobile generators are pinned
+in `buf.gen.mobile.yaml` and run on the Buf Schema Registry, so that task needs
+network access. It writes public SwiftProtobuf and gRPC Swift 2 types to
+`gen/ios/`, and Android Protobuf Lite messages, Kotlin builders, and gRPC Java
+and Kotlin stubs to `gen/android/`.
+
+## Using the generated packages
+
+- **Go:** Import `github.com/x40-link/api/gen/x40/link/v1alpha` from this
+  module. Once the changes are committed and pushed, a consumer can run
+  `go get github.com/x40-link/api@<commit-or-version>`. A version tag is useful
+  for stable releases; a GitHub Release asset is unnecessary.
+- **iOS:** Add `https://github.com/x40-link/api.git` as a Swift Package
+  dependency and select the `X40LinkAPI` product. [Package.swift](Package.swift)
+  builds the checked-in Swift sources and declares their Protobuf and gRPC
+  dependencies. The package requires Swift 6.1 and iOS 18 or later. The app
+  supplies its gRPC transport and channel.
+- **Android:** The standalone [Gradle library](android/build.gradle.kts) builds
+  the checked-in Java/Kotlin sources as `com.x40.link:api-android`. For a local
+  checkout, add `includeBuild("../api/android")` to the app's
+  `settings.gradle.kts` (adjust the path), then add
+  `implementation("com.x40.link:api-android:0.0.0-SNAPSHOT")` to the app module.
+  The included build substitutes the source library for that coordinate. The
+  app supplies a gRPC transport and channel. The selected gRPC Java runtime
+  supports Android API 24 or later.
+
+To publish the Android library into your local Maven repository, run
+`./android/gradlew -p android -PapiVersion=0.1.0 publishToMavenLocal`. A
+consumer can then use `mavenLocal()` and
+`implementation("com.x40.link:api-android:0.1.0")`. To publish to a hosted Maven
+repository, run `publish` with `-PmavenRepositoryUrl=<repository-url>` and
+`-PapiVersion=<version>`; set `MAVEN_USERNAME` and `MAVEN_PASSWORD` if the
+repository requires credentials. No GitHub Release is needed. Run
+`task build:ios` on a machine with Swift 6.1 or newer to check the Swift package.
+
+The [OpenAPI 3.1 document](docs/openapi/x40/link/v1alpha/short_link.openapi.json)
+describes the annotated management routes and can be served by a renderer later.
+The upstream OpenAPI 3 generator is currently alpha, so review changes to this
+document when updating the generator.

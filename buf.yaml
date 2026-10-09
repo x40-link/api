@@ -2,6 +2,7 @@ version: v1
 name: buf.build/x40-link/api
 deps:
   - buf.build/googleapis/googleapis
+  - buf.build/grpc-ecosystem/grpc-gateway
 lint:
   use:
     - STANDARD

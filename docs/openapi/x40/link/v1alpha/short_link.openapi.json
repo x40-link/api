@@ -1,0 +1,453 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "X40 Link API",
+    "description": "Authenticated management of short links.",
+    "version": "v1alpha"
+  },
+  "paths": {
+    "/v1alpha/domains/{parent}/shortLinks": {
+      "get": {
+        "tags": [
+          "ShortLinkService"
+        ],
+        "summary": "List owned links in one domain or, with domains/-, across all domains.",
+        "operationId": "ShortLinkService_ListShortLinks",
+        "parameters": [
+          {
+            "name": "parent",
+            "in": "path",
+            "description": "Format: domains/{domain}, or domains/- for all domains. Only links owned\nby the caller are returned. The result is strongly consistent with writes.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Maximum number to return. The service chooses a sensible default when\nzero; it may cap larger values. Negative values are invalid.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageToken",
+            "in": "query",
+            "description": "Token from a previous response; all other parameters must match.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "An unexpected error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/google.rpc.Status"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Links owned by the caller in the requested domain scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/x40.link.v1alpha.ListShortLinksResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ShortLinkService"
+        ],
+        "summary": "Atomically claim an explicit path or generate an unused suffix. Generated\ncollisions are retried; no existing link is overwritten.\nWrites complete synchronously and return the resource directly.",
+        "operationId": "ShortLinkService_CreateShortLink",
+        "parameters": [
+          {
+            "name": "parent",
+            "in": "path",
+            "description": "The canonical domain parent. Format: domains/{domain}. Any syntactically\nvalid domain is accepted; explicit ports are invalid. Domains are\nnormalized to lowercase. Domain creation policy belongs to authorization.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "requestId",
+            "in": "query",
+            "description": "Optional idempotency key, at most 36 ASCII characters; UUIDs are accepted.\nSuccessful results are retained for 24 hours, scoped to caller and request.\nReusing an ID for a different request is invalid. A lost-response retry\nreturns the original result, including for generated paths.\nNon-UUID request IDs are valid, so UUID4 format is not required.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "validateOnly",
+            "in": "query",
+            "description": "Check permissions, validity and conflicts without claiming an address or\nrecording request_id. The response is the proposed ShortLink.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/x40.link.v1alpha.ShortLink"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "An unexpected error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/google.rpc.Status"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "A managed HTTP redirect at one source domain and path.\n\nThe identity is (canonical domain, canonical path), regardless of whether a\nsource request uses HTTP or HTTPS. Writes take effect synchronously; after a\nsuccessful write, management reads and HTTP redirects observe the result.\nNo delete_time or display_name is exposed: links are hard-deleted and path\nis their readable identity. (AIP-148 exception.)\n\nThe synchronous resource has no in-flight reconciliation state.\n\nencoded_path names the reversible path encoding rather than an arbitrary ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/x40.link.v1alpha.ShortLink"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1alpha/domains/{name}/shortLinks/{name_1}": {
+      "get": {
+        "tags": [
+          "ShortLinkService"
+        ],
+        "summary": "Read an owned link, including before DNS points to the short domain.",
+        "operationId": "ShortLinkService_GetShortLink",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Format: domains/{domain}/shortLinks/{encoded_path}.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name_1",
+            "in": "path",
+            "description": "Format: domains/{domain}/shortLinks/{encoded_path}.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "An unexpected error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/google.rpc.Status"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "A managed HTTP redirect at one source domain and path.\n\nThe identity is (canonical domain, canonical path), regardless of whether a\nsource request uses HTTP or HTTPS. Writes take effect synchronously; after a\nsuccessful write, management reads and HTTP redirects observe the result.\nNo delete_time or display_name is exposed: links are hard-deleted and path\nis their readable identity. (AIP-148 exception.)\n\nThe synchronous resource has no in-flight reconciliation state.\n\nencoded_path names the reversible path encoding rather than an arbitrary ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/x40.link.v1alpha.ShortLink"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ShortLinkService"
+        ],
+        "summary": "Delete an owned link. On success reads and redirects see its absence.\nWrites complete synchronously and return Empty directly.",
+        "operationId": "ShortLinkService_DeleteShortLink",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Format: domains/{domain}/shortLinks/{encoded_path}.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name_1",
+            "in": "path",
+            "description": "Format: domains/{domain}/shortLinks/{encoded_path}.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "etag",
+            "in": "query",
+            "description": "If present, must match the current ETag; a mismatch returns ABORTED.\nIgnored when the link is absent and allow_missing is true.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "allowMissing",
+            "in": "query",
+            "description": "Succeed without a write if the link is absent. Existing links still\nrequire owner permission. A deleted address is immediately reusable.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "validateOnly",
+            "in": "query",
+            "description": "Perform the normal checks without deleting the link.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "An unexpected error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/google.rpc.Status"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "A generic empty message that you can re-use to avoid defining duplicated\nempty messages in your APIs. A typical example is to use it as the request\nor the response type of an API method. For instance:\n\n    service Foo {\n      rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);\n    }",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1alpha/domains/{short_link.name}/shortLinks/{short_link.name_1}": {
+      "patch": {
+        "tags": [
+          "ShortLinkService"
+        ],
+        "summary": "Apply mutable fields. On success reads and redirects see the new state.\nWrites complete synchronously and return the resource directly.",
+        "operationId": "ShortLinkService_UpdateShortLink",
+        "parameters": [
+          {
+            "name": "short_link.name",
+            "in": "path",
+            "description": "The resource name. Format: domains/{domain}/shortLinks/{encoded_path}.\nThe server derives encoded_path as \"p\" followed by unpadded RFC 4648\nBase32 of the UTF-8 bytes of the canonical path, in lowercase. Decoding\nafter the prefix is reversible. For example, \"/\" becomes \"pf4\".\nThis path-derived name deliberately has no independent short_link_id\nrequest field (an exception to AIP-133). On create, name is ignored.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "short_link.name_1",
+            "in": "path",
+            "description": "The resource name. Format: domains/{domain}/shortLinks/{encoded_path}.\nThe server derives encoded_path as \"p\" followed by unpadded RFC 4648\nBase32 of the UTF-8 bytes of the canonical path, in lowercase. Decoding\nafter the prefix is reversible. For example, \"/\" becomes \"pf4\".\nThis path-derived name deliberately has no independent short_link_id\nrequest field (an exception to AIP-133). On create, name is ignored.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "updateMask",
+            "in": "query",
+            "description": "Fields to change. Allowed paths are destination_url and annotations.\nAn omitted mask updates populated mutable fields. \"*\" replaces both\nmutable fields; an explicitly masked empty value clears annotations.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "allowMissing",
+            "in": "query",
+            "description": "Create the named link if absent, applying all supplied mutable state and\nignoring update_mask. Existing links can only be changed by their owner;\nan identical desired state returns the existing resource unchanged.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "validateOnly",
+            "in": "query",
+            "description": "Perform the normal checks without changing the link.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/x40.link.v1alpha.ShortLink"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "An unexpected error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/google.rpc.Status"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "A managed HTTP redirect at one source domain and path.\n\nThe identity is (canonical domain, canonical path), regardless of whether a\nsource request uses HTTP or HTTPS. Writes take effect synchronously; after a\nsuccessful write, management reads and HTTP redirects observe the result.\nNo delete_time or display_name is exposed: links are hard-deleted and path\nis their readable identity. (AIP-148 exception.)\n\nThe synchronous resource has no in-flight reconciliation state.\n\nencoded_path names the reversible path encoding rather than an arbitrary ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/x40.link.v1alpha.ShortLink"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "google.rpc.Status": {
+        "type": "object",
+        "description": "The Status type defines a logical error model suitable for different programming environments.",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The status code, which should be an enum value of google.rpc.Code."
+          },
+          "details": {
+            "type": "array",
+            "description": "A list of messages that carry the error details.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "@type": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "message": {
+            "type": "string",
+            "description": "A developer-facing error message."
+          }
+        }
+      },
+      "x40.link.v1alpha.ListShortLinksResponse": {
+        "type": "object",
+        "description": "Links owned by the caller in the requested domain scope.",
+        "properties": {
+          "nextPageToken": {
+            "type": "string",
+            "description": "Token for the next page; empty when this is the final page."
+          },
+          "shortLinks": {
+            "type": "array",
+            "description": "The links owned by the caller in the requested domain scope.",
+            "items": {
+              "$ref": "#/components/schemas/x40.link.v1alpha.ShortLink"
+            }
+          }
+        }
+      },
+      "x40.link.v1alpha.ShortLink": {
+        "type": "object",
+        "description": "A managed HTTP redirect at one source domain and path.\n\nThe identity is (canonical domain, canonical path), regardless of whether a\nsource request uses HTTP or HTTPS. Writes take effect synchronously; after a\nsuccessful write, management reads and HTTP redirects observe the result.\nNo delete_time or display_name is exposed: links are hard-deleted and path\nis their readable identity. (AIP-148 exception.)\n\nThe synchronous resource has no in-flight reconciliation state.\n\nencoded_path names the reversible path encoding rather than an arbitrary ID.",
+        "properties": {
+          "annotations": {
+            "type": "object",
+            "description": "User-managed metadata. A mask containing \"annotations\" replaces the map;\nan empty map clears it.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "createTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this incarnation was created.",
+            "readOnly": true
+          },
+          "destinationUrl": {
+            "type": "string",
+            "description": "An absolute HTTP or HTTPS destination URL. Required on create."
+          },
+          "etag": {
+            "type": "string",
+            "description": "An opaque, quoted, server-computed strong ETag. It changes when mutable\nstate changes and cannot match the ETag of a previous incarnation at the\nsame name. If supplied on update, it is a precondition, not a change."
+          },
+          "name": {
+            "type": "string",
+            "description": "The resource name. Format: domains/{domain}/shortLinks/{encoded_path}.\nThe server derives encoded_path as \"p\" followed by unpadded RFC 4648\nBase32 of the UTF-8 bytes of the canonical path, in lowercase. Decoding\nafter the prefix is reversible. For example, \"/\" becomes \"pf4\".\nThis path-derived name deliberately has no independent short_link_id\nrequest field (an exception to AIP-133). On create, name is ignored."
+          },
+          "path": {
+            "type": "string",
+            "description": "The source path, starting with \"/\". Path identity follows URI rules:\ncase, literal \"+\", repeated slashes, and escaped reserved characters\nremain distinct. Percent escapes use uppercase hex in canonical form;\nescapes for unreserved characters are decoded. A source query is ignored\nand is never appended to destination_url. On create, omission requests a\ngenerated suffix; an explicit \"/\" claims the root path. On update, the\npath is immutable and, if supplied, must match name."
+          },
+          "shortUrl": {
+            "type": "string",
+            "description": "The canonical HTTPS source URL, computed by the server.",
+            "readOnly": true
+          },
+          "uid": {
+            "type": "string",
+            "description": "The server-assigned identity of this incarnation. Deleting and recreating\nthe same name produces a new uid.\nThe UID format remains opaque while the service migration is pending.",
+            "readOnly": true
+          },
+          "updateTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the mutable state last changed. An identical update leaves it alone.",
+            "readOnly": true
+          }
+        },
+        "required": [
+          "destinationUrl"
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "ShortLinkService",
+      "description": "Authenticated management of short links. The public HTTP redirect remains\noutside this service and continues to use status 307."
+    }
+  ]
+}
